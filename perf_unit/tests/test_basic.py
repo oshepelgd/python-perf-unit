@@ -1,7 +1,7 @@
 """unittest module"""
 import random
 import time
-from unittest import TestCase, main, TestLoader, TextTestRunner
+from unittest import TestCase, TestLoader, TextTestRunner
 
 from perf_unit import NotATestCaseClass, perf_unit_test_class
 
@@ -64,7 +64,3 @@ class TestBasic(TestCase):
         result = runner.run(suite)
         result.printErrors()
         self.assertTrue(result.wasSuccessful())
-
-
-if __name__ == "__main__":
-    main()

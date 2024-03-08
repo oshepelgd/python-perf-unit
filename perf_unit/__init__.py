@@ -19,12 +19,12 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-import time
-import statistics
-from functools import wraps
-from concurrent.futures import ThreadPoolExecutor
 
+import statistics
+import time
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
+from functools import wraps
 from unittest import TestCase
 
 
@@ -62,14 +62,12 @@ def run_single_iteration(
 
 def perf_unit_test_class(
     *args,
-    how_many_threads: int = 30,
-    total_number_of_method_executions: int = 100,
-    upper_median_threashold_in_milliseconds: int = 500,
-    percentiles: tuple = (10, 50, 75, 90, 95, 99),
+    **kwargs,
 ):
     """This class decorator converts all test methods in a unit test class into performance tests.
 
-    It will run the method repeatedly, with a given number of concurrent threads and then analyzed the methods response time.
+    It will run the method repeatedly,
+    with a given number of concurrent threads and then analyzed the methods response time.
 
 
     Args:
@@ -82,13 +80,25 @@ def perf_unit_test_class(
     def modify_test_class(cls):
         def wrapper(method):
             @wraps(method)
-            def wrapped_method(*args, **kwargs):
+            def wrapped_method(*method_args, **method_kwargs):
+                how_many_threads = kwargs.get("how_many_threads", 30)
+                total_number_of_method_executions = kwargs.get(
+                    "total_number_of_method_executions", 100
+                )
+                upper_median_threashold_in_milliseconds = kwargs.get(
+                    "upper_median_threashold_in_milliseconds", 500
+                )
+                percentiles = kwargs.get("percentiles", (10, 50, 75, 90, 95, 99))
+
                 futures = []
                 with ThreadPoolExecutor(how_many_threads) as executor:
                     for _ in range(total_number_of_method_executions):
                         futures.append(
                             executor.submit(
-                                run_single_iteration, method, *args, **kwargs
+                                run_single_iteration,
+                                method,
+                                *method_args,
+                                **method_kwargs,
                             )
                         )
 
@@ -122,7 +132,9 @@ def perf_unit_test_class(
 
         return cls
 
-    if len(args) == 1:
+    # The decorator has been used without arguments
+    if len(args) == 1 and callable(args[0]) and not kwargs:
         return modify_test_class(args[0])
 
+    # The decorator has been used with arguments
     return modify_test_class
