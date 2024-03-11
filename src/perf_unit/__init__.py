@@ -62,6 +62,10 @@ def run_single_iteration(
 
 def perf_unit_test_class(
     *args,
+    how_many_threads: int = 30,
+    total_number_of_method_executions: int = 100,
+    upper_median_threashold_in_milliseconds: int = 500,
+    percentiles: tuple = (10, 50, 75, 90, 95, 99),
     **kwargs,
 ):
     """This class decorator converts all test methods in a unit test class into performance tests.
@@ -81,15 +85,6 @@ def perf_unit_test_class(
         def wrapper(method):
             @wraps(method)
             def wrapped_method(*method_args, **method_kwargs):
-                how_many_threads = kwargs.get("how_many_threads", 30)
-                total_number_of_method_executions = kwargs.get(
-                    "total_number_of_method_executions", 100
-                )
-                upper_median_threashold_in_milliseconds = kwargs.get(
-                    "upper_median_threashold_in_milliseconds", 500
-                )
-                percentiles = kwargs.get("percentiles", (10, 50, 75, 90, 95, 99))
-
                 futures = []
                 with ThreadPoolExecutor(how_many_threads) as executor:
                     for _ in range(total_number_of_method_executions):
