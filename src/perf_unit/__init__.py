@@ -60,12 +60,12 @@ def run_single_iteration(
     return duration()
 
 
-def method_decorator(
+def perf_method_decorator(
     method,
-    how_many_threads,
-    total_number_of_method_executions,
-    upper_median_threashold_in_milliseconds,
-    percentiles,
+    how_many_threads: int = 30,
+    total_number_of_method_executions: int = 100,
+    upper_median_threashold_in_milliseconds: int = 500,
+    percentiles: tuple = (10, 50, 75, 90, 95, 99),
 ):
     @wraps(method)
     def wrapper(*method_args, **method_kwargs):
@@ -133,7 +133,7 @@ def perf_unit_test_class(
                 setattr(
                     cls,
                     attr,
-                    method_decorator(
+                    perf_method_decorator(
                         original_method,
                         how_many_threads,
                         total_number_of_method_executions,
