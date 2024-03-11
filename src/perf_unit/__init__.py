@@ -60,6 +60,46 @@ def run_single_iteration(
     return duration()
 
 
+def method_decorator(
+    method,
+    how_many_threads,
+    total_number_of_method_executions,
+    upper_median_threashold_in_milliseconds,
+    percentiles,
+):
+    @wraps(method)
+    def wrapper(*method_args, **method_kwargs):
+        futures = []
+        with ThreadPoolExecutor(how_many_threads) as executor:
+            for _ in range(total_number_of_method_executions):
+                futures.append(
+                    executor.submit(
+                        run_single_iteration,
+                        method,
+                        *method_args,
+                        **method_kwargs,
+                    )
+                )
+
+        execution_times = tuple([future.result() for future in futures])
+
+        median_time = statistics.median(execution_times)
+
+        print(
+            f"Percentile report for {method.__name__} with {len(execution_times)} calls:"
+        )
+        for p in percentiles:
+            print(
+                f"  {p}th percentile: {statistics.quantiles(execution_times, n=100)[p - 1]} milliseconds"
+            )
+
+        assert (
+            median_time < upper_median_threashold_in_milliseconds
+        ), f"Median execution time is too high: {median_time} milliseconds"
+
+    return wrapper
+
+
 def perf_unit_test_class(
     *args,
     how_many_threads: int = 30,
@@ -82,39 +122,6 @@ def perf_unit_test_class(
     """
 
     def modify_test_class(cls):
-        def wrapper(method):
-            @wraps(method)
-            def wrapped_method(*method_args, **method_kwargs):
-                futures = []
-                with ThreadPoolExecutor(how_many_threads) as executor:
-                    for _ in range(total_number_of_method_executions):
-                        futures.append(
-                            executor.submit(
-                                run_single_iteration,
-                                method,
-                                *method_args,
-                                **method_kwargs,
-                            )
-                        )
-
-                execution_times = tuple([future.result() for future in futures])
-
-                median_time = statistics.median(execution_times)
-
-                print(
-                    f"Percentile report for {method.__name__} with {len(execution_times)} calls:"
-                )
-                for p in percentiles:
-                    print(
-                        f"  {p}th percentile: {statistics.quantiles(execution_times, n=100)[p-1]} milliseconds"
-                    )
-
-                assert (
-                    median_time < upper_median_threashold_in_milliseconds
-                ), f"Median execution time is too high: {median_time} milliseconds"
-
-            return wrapped_method
-
         if not issubclass(cls, TestCase):
             raise NotATestCaseClass(
                 f"the given class `{cls.__name__}` is not a subclass of `unittest.TestCase`"
@@ -123,7 +130,17 @@ def perf_unit_test_class(
         for attr in dir(cls):
             if attr.startswith("test_"):
                 original_method = getattr(cls, attr)
-                setattr(cls, attr, wrapper(original_method))
+                setattr(
+                    cls,
+                    attr,
+                    method_decorator(
+                        original_method,
+                        how_many_threads,
+                        total_number_of_method_executions,
+                        upper_median_threashold_in_milliseconds,
+                        percentiles,
+                    ),
+                )
 
         return cls
 
