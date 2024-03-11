@@ -3,7 +3,7 @@ import random
 import time
 from unittest import TestCase, TestLoader, TextTestRunner
 
-from perf_unit import NotATestCaseClass, perf_unit_test_class
+from perf_unit import NotATestCaseClass, perf_unit_test_class, perf_method_decorator
 
 
 class TestBasic(TestCase):
@@ -64,3 +64,13 @@ class TestBasic(TestCase):
         result = runner.run(suite)
         result.printErrors()
         self.assertTrue(result.wasSuccessful())
+
+    def test_method_decorator_with_inputs(self):
+        @perf_method_decorator
+        def test_method_decorator():
+            pass
+
+    def test_method_decorator_with_no_inputs(self):
+        @perf_method_decorator
+        def test_method_decorator():
+            pass
